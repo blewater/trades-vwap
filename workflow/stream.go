@@ -111,8 +111,10 @@ func ingestTradesStream(ctx context.Context, conn *websocket.Conn, broadcast cha
 				tradeValue := &types.TradeValue{
 					ProductID: tradeMsg.ProductID,
 				}
-				tradeValue.Price = tradeMsg.Price
-				tradeValue.Size = tradeMsg.Size
+				tradeValue.Price = big.NewFloat(0)
+				tradeValue.Size = big.NewFloat(0)
+				tradeValue.Price.Set(tradeMsg.Price)
+				tradeValue.Size.Set(tradeMsg.Size)
 				broadcast <- tradeValue
 
 				logger.Debug("received trade", zap.Any("ticker", tradeValue))
