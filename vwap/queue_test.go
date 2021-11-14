@@ -3,6 +3,7 @@ package vwap
 import (
 	"math/big"
 	"reflect"
+	"sync"
 	"testing"
 )
 
@@ -21,17 +22,16 @@ func TestNewWindowQueue(t *testing.T) {
 				size: 10,
 			},
 			want: &WindowQueue{
-				content:   make([]*vwapCache, 10),
-				size:      10,
+				Mutex:   sync.Mutex{},
+				content: make([]*vwapCache, 10),
+				size:    10,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(
 			tt.name, func(t *testing.T) {
-				if got := NewWindowQueue(tt.args.size); !reflect.DeepEqual(
-					got, tt.want,
-				) {
+				if got := NewWindowQueue(tt.args.size); !reflect.DeepEqual(got, tt.want) {
 					t.Errorf("NewWindowQueue() = %v, want %v", got, tt.want)
 				}
 			},
@@ -54,13 +54,13 @@ func TestWindowQueue_Peek(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want *vwapCache
-		ok   bool
+		want   *vwapCache
+		ok     bool
 	}{
 		{
-			name:   "Peek",
+			name: "Peek",
 			fields: fields{
-				content:   []*vwapCache{
+				content: []*vwapCache{
 					{
 						TPV:  big.NewFloat(0),
 						TVol: big.NewFloat(0),
@@ -85,10 +85,10 @@ func TestWindowQueue_Peek(t *testing.T) {
 				len:       3,
 				size:      3,
 			},
-			args:   args{
+			args: args{
 				pos: 2,
 			},
-			want:   &vwapCache{
+			want: &vwapCache{
 				TPV:  big.NewFloat(2),
 				TVol: big.NewFloat(0),
 				PV:   big.NewFloat(0),
@@ -130,13 +130,13 @@ func TestWindowQueue_Pop(t *testing.T) {
 	tests := []struct {
 		name   string
 		fields fields
-		want *vwapCache
-		ok   bool
+		want   *vwapCache
+		ok     bool
 	}{
 		{
-			name:   "Pop1",
+			name: "Pop1",
 			fields: fields{
-				content:   []*vwapCache{
+				content: []*vwapCache{
 					{
 						TPV:  big.NewFloat(0),
 						TVol: big.NewFloat(0),
@@ -161,7 +161,7 @@ func TestWindowQueue_Pop(t *testing.T) {
 				len:       3,
 				size:      3,
 			},
-			want:   &vwapCache{
+			want: &vwapCache{
 				TPV:  big.NewFloat(0),
 				TVol: big.NewFloat(0),
 				PV:   big.NewFloat(0),
@@ -170,9 +170,9 @@ func TestWindowQueue_Pop(t *testing.T) {
 			ok: true,
 		},
 		{
-			name:   "Pop2",
+			name: "Pop2",
 			fields: fields{
-				content:   []*vwapCache{
+				content: []*vwapCache{
 					{
 						TPV:  big.NewFloat(1),
 						TVol: big.NewFloat(0),
@@ -191,7 +191,7 @@ func TestWindowQueue_Pop(t *testing.T) {
 				len:       2,
 				size:      10,
 			},
-			want:   &vwapCache{
+			want: &vwapCache{
 				TPV:  big.NewFloat(1),
 				TVol: big.NewFloat(0),
 				PV:   big.NewFloat(0),
@@ -200,9 +200,9 @@ func TestWindowQueue_Pop(t *testing.T) {
 			ok: true,
 		},
 		{
-			name:   "Pop3",
+			name: "Pop3",
 			fields: fields{
-				content:   []*vwapCache{
+				content: []*vwapCache{
 					{
 						TPV:  big.NewFloat(2),
 						TVol: big.NewFloat(0),
@@ -215,7 +215,7 @@ func TestWindowQueue_Pop(t *testing.T) {
 				len:       1,
 				size:      10,
 			},
-			want:   &vwapCache{
+			want: &vwapCache{
 				TPV:  big.NewFloat(2),
 				TVol: big.NewFloat(0),
 				PV:   big.NewFloat(0),
@@ -224,17 +224,16 @@ func TestWindowQueue_Pop(t *testing.T) {
 			ok: true,
 		},
 		{
-			name:   "Pop4",
+			name: "Pop4",
 			fields: fields{
-				content:   []*vwapCache{
-				},
+				content:   []*vwapCache{},
 				readHead:  0,
 				writeHead: 0,
 				len:       0,
 				size:      3,
 			},
-			want:   nil,
-			ok: false,
+			want: nil,
+			ok:   false,
 		},
 	}
 	for _, tt := range tests {
@@ -277,7 +276,7 @@ func TestWindowQueue_Push(t *testing.T) {
 		want   bool
 	}{
 		{
-			name:   "Push when empty",
+			name: "Push when empty",
 			fields: fields{
 				content:   make([]*vwapCache, 3),
 				readHead:  0,
@@ -285,7 +284,7 @@ func TestWindowQueue_Push(t *testing.T) {
 				len:       0,
 				size:      3,
 			},
-			args:   args{
+			args: args{
 				e: &vwapCache{
 					TPV:  big.NewFloat(0),
 					TVol: big.NewFloat(0),
@@ -293,12 +292,12 @@ func TestWindowQueue_Push(t *testing.T) {
 					Vol:  big.NewFloat(0),
 				},
 			},
-			want:   true,
+			want: true,
 		},
 		{
-			name:   "Push when one is empty",
+			name: "Push when one is empty",
 			fields: fields{
-				content:   []*vwapCache{
+				content: []*vwapCache{
 					{
 						TPV:  big.NewFloat(0),
 						TVol: big.NewFloat(0),
@@ -312,7 +311,7 @@ func TestWindowQueue_Push(t *testing.T) {
 				len:       1,
 				size:      2,
 			},
-			args:   args{
+			args: args{
 				e: &vwapCache{
 					TPV:  big.NewFloat(0),
 					TVol: big.NewFloat(0),
@@ -320,12 +319,12 @@ func TestWindowQueue_Push(t *testing.T) {
 					Vol:  big.NewFloat(0),
 				},
 			},
-			want:   true,
+			want: true,
 		},
 		{
-			name:   "Push when full",
+			name: "Push when full",
 			fields: fields{
-				content:   []*vwapCache{
+				content: []*vwapCache{
 					{
 						TPV:  big.NewFloat(0),
 						TVol: big.NewFloat(0),
@@ -350,8 +349,8 @@ func TestWindowQueue_Push(t *testing.T) {
 				len:       3,
 				size:      3,
 			},
-			args:   args{},
-			want:   false,
+			args: args{},
+			want: false,
 		},
 	}
 	for _, tt := range tests {
@@ -387,7 +386,7 @@ func TestWindowQueue_PeekLast(t *testing.T) {
 		want1  bool
 	}{
 		{
-			name:   "PeekLast when full of two to get first item",
+			name: "PeekLast when full of two to get first item",
 			fields: fields{
 				content: []*vwapCache{
 					{
@@ -408,16 +407,16 @@ func TestWindowQueue_PeekLast(t *testing.T) {
 				len:       2,
 				size:      2,
 			},
-			want:   &vwapCache{
+			want: &vwapCache{
 				TPV:  big.NewFloat(1),
 				TVol: big.NewFloat(0),
 				PV:   big.NewFloat(0),
 				Vol:  big.NewFloat(0),
 			},
-			want1:  true,
+			want1: true,
 		},
 		{
-			name:   "PeekLast when just before full to get mid item",
+			name: "PeekLast when just before full to get mid item",
 			fields: fields{
 				content: []*vwapCache{
 					{
@@ -439,13 +438,13 @@ func TestWindowQueue_PeekLast(t *testing.T) {
 				len:       3,
 				size:      3,
 			},
-			want:   &vwapCache{
+			want: &vwapCache{
 				TPV:  big.NewFloat(1),
 				TVol: big.NewFloat(0),
 				PV:   big.NewFloat(0),
 				Vol:  big.NewFloat(0),
 			},
-			want1:  true,
+			want1: true,
 		},
 	}
 	for _, tt := range tests {

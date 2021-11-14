@@ -1,20 +1,23 @@
 package vwap
 
+import "sync"
+
 // WindowQueue is a fixed size and allocated upfront queue of cached
 // data points specialized in the service of the VWAP algorithm needs.
 type WindowQueue struct {
-	content  []*vwapCache
-	readHead uint16
+	sync.Mutex
+	content   []*vwapCache
+	readHead  uint16
 	writeHead uint16
-	len uint16
-	size uint16
+	len       uint16
+	size      uint16
 }
 
-func NewWindowQueue(size uint16) *WindowQueue{
+func NewWindowQueue(size uint16) *WindowQueue {
 	return &WindowQueue{
 		// allocate it upfront
-		content:   make([]*vwapCache, size),
-		size: size,
+		content: make([]*vwapCache, size),
+		size:    size,
 	}
 }
 
@@ -26,19 +29,19 @@ func (q *WindowQueue) Peek(pos uint16) (*vwapCache, bool) {
 	return q.content[pos], true
 }
 
-func (q *WindowQueue) PeekLast()(*vwapCache, bool){
+func (q *WindowQueue) PeekLast() (*vwapCache, bool) {
 	return q.Peek(q.Last())
 }
 
-func (q *WindowQueue) Last()uint16{
+func (q *WindowQueue) Last() uint16 {
 	if q.len == 0 && q.readHead == 0 && q.writeHead == 0 {
 		return 0
 	}
 	if q.writeHead == 0 {
-		return q.size-1
+		return q.size - 1
 	}
 
-	return q.writeHead-1
+	return q.writeHead - 1
 }
 
 func (q *WindowQueue) Pop() (*vwapCache, bool) {

@@ -11,17 +11,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-//{"type":"subscribe","product_ids":["BTC-USD","ETH-USD","ETH-BTC"],"channels":["matches"]}
-// Pair i.e, BTC-USD
-
-type Config struct {
-	WorkerPoolSize uint16
-	DevLogLevel    bool
-	cfgFile        string
-	SocketURL      string
-	ProductIDs     []string // "BTC-USD","ETH-USD","ETH-BTC"
-}
-
 var flags Config
 
 // rootCmd represents the base command when called without any subcommands
@@ -71,10 +60,10 @@ func Execute() Config {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVarP(&flags.cfgFile, "config", "c", "", "config file (default is $HOME/.vwap.yaml)")
+	rootCmd.PersistentFlags().StringVarP(&flags.CfgFile, "config", "c", "", "config file (default is $HOME/.vwap.yaml)")
 	rootCmd.PersistentFlags().StringSliceVarP(&flags.ProductIDs, "productids", "p", []string{"BTC-USD", "ETH-USD", "ETH-BTC"}, "The comma separated trading product ID pairs to calculate the current 200 VWAP data points e.g. BTC-USD, ETH-USD, ETH-BTC")
 	rootCmd.PersistentFlags().StringVarP(&flags.SocketURL, "url", "u", "wss://ws-feed.exchange.coinbase.com", "The Coinbase URL with two choices: wss://ws-feed.exchange.coinbase.com --OR-- wss://ws-feed-public.sandbox.exchange.coinbase.com")
-	rootCmd.PersistentFlags().Uint16VarP(&flags.WorkerPoolSize, "workers", "w", 200, "The workers pool size for processing the ingested trades")
+	rootCmd.PersistentFlags().Uint16VarP(&flags.WorkerPoolSize, "workers", "w", 5, "The workers pool size for processing the ingested trades")
 	rootCmd.PersistentFlags().BoolVarP(
 		&flags.DevLogLevel, "devlogging", "d", false,
 		`by default logging is set to production level generating structured log entries suitable for machine processing i.e. Kafka. This offers the chance to override this to development level for human friendly log output`,
@@ -87,9 +76,9 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if flags.cfgFile != "" {
+	if flags.CfgFile != "" {
 		// Use config file from the flag.
-		viper.SetConfigFile(flags.cfgFile)
+		viper.SetConfigFile(flags.CfgFile)
 	} else {
 		// Find home directory.
 		home, err := os.UserHomeDir()

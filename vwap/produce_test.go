@@ -2,13 +2,14 @@ package vwap_test
 
 import (
 	"context"
+	"math/big"
+	"testing"
+
 	"github.com/blewater/zh/log"
 	"github.com/blewater/zh/types"
 	"github.com/blewater/zh/vwap"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
-	"math/big"
-	"testing"
 )
 
 type Ticker struct {
@@ -55,12 +56,12 @@ func (suite *VWAPTestSuite) TestVMAPResults() {
 				},
 				productsVWAP: vwap.New([]string{"0"}, 1),
 			},
-			results:[]types.VWAPResult{
+			results: []types.VWAPResult{
 				{
 					ProductID: "0",
 					Vwap:      big.NewFloat(0),
-				},	
-			}, 
+				},
+			},
 			expectPass:  true,
 			expectedErr: "",
 		},
@@ -76,7 +77,7 @@ func (suite *VWAPTestSuite) TestVMAPResults() {
 				},
 				productsVWAP: vwap.New([]string{"1"}, 1),
 			},
-			results:[]types.VWAPResult{
+			results: []types.VWAPResult{
 				{
 					ProductID: "1",
 					Vwap:      big.NewFloat(1),
@@ -97,7 +98,7 @@ func (suite *VWAPTestSuite) TestVMAPResults() {
 				},
 				productsVWAP: vwap.New([]string{"Prod"}, 1),
 			},
-			results:[]types.VWAPResult{
+			results: []types.VWAPResult{
 				{
 					ProductID: "Prod",
 					Vwap:      big.NewFloat(2),
@@ -123,7 +124,7 @@ func (suite *VWAPTestSuite) TestVMAPResults() {
 				},
 				productsVWAP: vwap.New([]string{"0"}, 1),
 			},
-			results:[]types.VWAPResult{
+			results: []types.VWAPResult{
 				{
 					ProductID: "0",
 					Vwap:      big.NewFloat(0),
@@ -153,7 +154,7 @@ func (suite *VWAPTestSuite) TestVMAPResults() {
 				},
 				productsVWAP: vwap.New([]string{"1"}, 2),
 			},
-			results:[]types.VWAPResult{
+			results: []types.VWAPResult{
 				{
 					ProductID: "1",
 					Vwap:      big.NewFloat(2.5),
@@ -183,7 +184,7 @@ func (suite *VWAPTestSuite) TestVMAPResults() {
 				},
 				productsVWAP: vwap.New([]string{"1"}, 1),
 			},
-			results:[]types.VWAPResult{
+			results: []types.VWAPResult{
 				{
 					ProductID: "1",
 					Vwap:      big.NewFloat(2.5),
@@ -218,7 +219,7 @@ func (suite *VWAPTestSuite) TestVMAPResults() {
 				},
 				productsVWAP: vwap.New([]string{"1"}, 3),
 			},
-			results:[]types.VWAPResult{
+			results: []types.VWAPResult{
 				{
 					ProductID: "1",
 					Vwap:      big.NewFloat(2.5),
@@ -257,7 +258,7 @@ func (suite *VWAPTestSuite) TestVMAPResults() {
 				},
 				productsVWAP: vwap.New([]string{"1"}, 1),
 			},
-			results:[]types.VWAPResult{
+			results: []types.VWAPResult{
 				{
 					ProductID: "1",
 					Vwap:      big.NewFloat(2.5),
@@ -296,7 +297,7 @@ func (suite *VWAPTestSuite) TestVMAPResults() {
 				},
 				productsVWAP: vwap.New([]string{"1"}, 2),
 			},
-			results:[]types.VWAPResult{
+			results: []types.VWAPResult{
 				{
 					ProductID: "1",
 					Vwap:      big.NewFloat(2.5),
@@ -335,7 +336,7 @@ func (suite *VWAPTestSuite) TestVMAPResults() {
 				},
 				productsVWAP: vwap.New([]string{"0", "1", "2"}, 1),
 			},
-			results:[]types.VWAPResult{
+			results: []types.VWAPResult{
 				{
 					ProductID: "0",
 					Vwap:      big.NewFloat(0),
@@ -409,7 +410,7 @@ func (suite *VWAPTestSuite) TestVMAPResults() {
 				},
 				productsVWAP: vwap.New([]string{"Prod"}, 10),
 			},
-			results:[]types.VWAPResult{
+			results: []types.VWAPResult{
 				{
 					ProductID: "Prod",
 					Vwap:      big.NewFloat(0),
@@ -511,7 +512,7 @@ func (suite *VWAPTestSuite) TestVMAPResults() {
 				},
 				productsVWAP: vwap.New([]string{"Prod"}, 2),
 			},
-			results:[]types.VWAPResult{
+			results: []types.VWAPResult{
 				{
 					ProductID: "Prod",
 					Vwap:      big.NewFloat(0),

@@ -13,18 +13,8 @@ type TradesQ chan *TradeValue
 // TradesQConsumer is the consumer alias for TradesQ
 type TradesQConsumer chan<- *TradeValue
 
-// TradesQProducer is the producer alias for TradesQ
-type TradesQProducer <-chan *TradeValue
-
 // SubReq {"type":"subscribe","product_ids":["BTC-USD","ETH-USD","ETH-BTC"],"channels":["matches"]}
 type SubReq struct {
-	Type       string   `json:"type"`
-	ProductIds []string `json:"product_ids"`
-	Channels   []string `json:"channels"`
-}
-
-// UnsubReq {"type":"unsubscribe","product_ids":["BTC-USD","ETH-USD","ETH-BTC"],"channels":["matches"]}
-type UnsubReq struct {
 	Type       string   `json:"type"`
 	ProductIds []string `json:"product_ids"`
 	Channels   []string `json:"channels"`
@@ -53,6 +43,12 @@ type TradeMsg struct {
 	Price *big.Float `json:"price"`
 }
 
+var TradeValueMemPool = sync.Pool{
+	New: func() interface{} {
+		return new(TradeValue)
+	},
+}
+
 // TradeValue represents the minimum data set to calculate the VWAP data points.
 // e.g. "product_id":"ETH-USD","price":"4606.8","size":"0.00269988"
 type TradeValue struct {
@@ -70,9 +66,6 @@ type ResultsQ chan *VWAPResult
 
 var BigFloatMemPool = sync.Pool{
 	New: func() interface{} {
-		// The Pool's New function should generally only return pointer
-		// types, since a pointer can be put into the return interface
-		// value without an allocation:
 		return big.NewFloat(0)
 	},
 }

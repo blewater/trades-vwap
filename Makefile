@@ -13,7 +13,10 @@ escape:
 	go build -gcflags '-m -m' -o build/vwap ./cmd
 
 run:
-	go run main.go -d
+	go run main.go -d -w 4 -u wss://ws-feed-public.sandbox.exchange.coinbase.com
+
+run-prod: build
+	build/vwap -u wss://ws-feed.exchange.coinbase.com -w 5
 
 clean:
 	rm ./build/*
@@ -35,12 +38,18 @@ install:
 	go install ./cmd
 
 build-docker:
-	$(MAKE) -C docker/ all
+	$(DOCKER) build . --tag blewater/vwap
+
+run-docker:
+	$(DOCKER) run -it blewater/vwap
 
 test:
 	go test ./...
 
+bench:
+	go test ./... -run=XXX -bench=.
+
 github-ci:
 	$(MAKE) test
 
-.PHONY: build test build-docker license
+.PHONY: clean bench build check-race run run-prod lint imp fmt test github-ci build-docker run-docker

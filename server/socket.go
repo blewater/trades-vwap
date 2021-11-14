@@ -22,7 +22,6 @@ const (
 
 func Connect(ctx context.Context, socketAddr string) (*websocket.Conn, error) {
 	logger := log.FromContext(ctx)
-	defer logger.Sync()
 
 	logger.Debug("connecting", zap.String("host", socketAddr))
 
@@ -45,7 +44,6 @@ func Connect(ctx context.Context, socketAddr string) (*websocket.Conn, error) {
 
 func Subscribe(ctx context.Context, conn *websocket.Conn, productIDs []string) error {
 	logger := log.FromContext(ctx)
-	defer logger.Sync()
 
 	err := conn.WriteJSON(
 		&types.SubReq{

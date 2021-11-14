@@ -17,17 +17,23 @@ func main() {
 
 	w := workflow.New(cfg)
 
-	ctx, cancel := context.WithCancel(log.ContextWithLogger(context.Background(), logger))
+	ctx, cancel := context.WithCancel(
+		log.ContextWithLogger(context.Background(), logger))
 
-	// Precedes ingestion to start the pool
+	// Precedes socket communication to start the pool
 	go w.StartPool(ctx)
 
-	go w.PipeTradesToVwapQ(ctx)
+	go func() {
+		if err := w.TradesToVwap(ctx); err != nil {
+			// socket failed to connect
+			os.Exit(1)
+		}
+	}()
 
-	waitSignal(cancel)
+	waitInterruptSignal(cancel)
 }
 
-func waitSignal(cancel context.CancelFunc) {
+func waitInterruptSignal(cancel context.CancelFunc) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 	<-interrupt

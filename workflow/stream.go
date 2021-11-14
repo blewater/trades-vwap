@@ -4,6 +4,7 @@ package workflow
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"os"
 	"time"
 
@@ -37,23 +38,16 @@ func New(cfg cmd.Config) Client {
 	}
 }
 
-// GetTradesQProducer returns a trades generator or producer that produces trade
-// values
-func (c Client) GetTradesQProducer() types.TradesQProducer {
-	return c.q
-}
-
 // GetTradesQConsumer returns a trades queue consumer that receives
 // trade values
 func (c Client) GetTradesQConsumer() types.TradesQConsumer {
 	return c.q
 }
 
-func (c *Client) PipeTradesToVwapQ(ctx context.Context) error {
-	defer close(c.q)
-
+// TradesToVwap pipes trades to the go routines pool and receives back here the
+// transformed VWAP results by the Results Queue.
+func (c *Client) TradesToVwap(ctx context.Context) error {
 	logger := log.FromContext(ctx)
-	defer logger.Sync()
 
 	var err error
 	c.conn, err = server.Connect(ctx, c.cfg.SocketURL)
@@ -67,8 +61,12 @@ func (c *Client) PipeTradesToVwapQ(ctx context.Context) error {
 	}
 
 	doneTradesStreaming := make(chan struct{})
-	go ingestTradesStream(ctx, c.conn, c.q, doneTradesStreaming)
+	go ingestTradesStream(ctx, c.conn, c.GetTradesQConsumer(), doneTradesStreaming)
 
+	return c.IngestVWAPResults(ctx, logger, doneTradesStreaming)
+}
+
+func (c *Client) IngestVWAPResults(ctx context.Context, logger *zap.Logger, doneTradesStreaming chan struct{}) error {
 	for {
 		select {
 		case res := <-c.productsVwap.GetResultsQ():
@@ -88,7 +86,6 @@ func ingestTradesStream(ctx context.Context, conn *websocket.Conn, broadcast cha
 	defer close(quit)
 
 	logger := log.FromContext(ctx)
-	defer logger.Sync()
 
 	var tradeMsg types.TradeMsg
 	for {
@@ -105,16 +102,21 @@ func ingestTradesStream(ctx context.Context, conn *websocket.Conn, broadcast cha
 			switch tradeMsg.Type {
 			case server.SubAckMsgType:
 				logger.Info("Subscribed:")
+			/*
+			* Undocumented message type? Appears to propagate the same info as
+			* `match`
+			 */
 			case server.MatchLastMsgType:
 				fallthrough
 			case server.MatchMsgType:
-				tradeValue := &types.TradeValue{
-					ProductID: tradeMsg.ProductID,
-				}
-				tradeValue.Price = big.NewFloat(0)
-				tradeValue.Size = big.NewFloat(0)
+				tradeValue := types.TradeValueMemPool.Get().(*types.TradeValue)
+				tradeValue.ProductID = tradeMsg.ProductID
+
+				tradeValue.Price = types.BigFloatMemPool.Get().(*big.Float)
+				tradeValue.Size = types.BigFloatMemPool.Get().(*big.Float)
 				tradeValue.Price.Set(tradeMsg.Price)
 				tradeValue.Size.Set(tradeMsg.Size)
+
 				broadcast <- tradeValue
 
 				logger.Debug("received trade", zap.Any("ticker", tradeValue))
