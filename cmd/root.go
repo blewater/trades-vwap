@@ -63,7 +63,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&flags.CfgFile, "config", "c", "", "config file (default is $HOME/.vwap.yaml)")
 	rootCmd.PersistentFlags().StringSliceVarP(&flags.ProductIDs, "productids", "p", []string{"BTC-USD", "ETH-USD", "ETH-BTC"}, "The comma separated trading product ID pairs to calculate the current 200 VWAP data points e.g. BTC-USD, ETH-USD, ETH-BTC")
 	rootCmd.PersistentFlags().StringVarP(&flags.SocketURL, "url", "u", "wss://ws-feed.exchange.coinbase.com", "The Coinbase URL with two choices: wss://ws-feed.exchange.coinbase.com --OR-- wss://ws-feed-public.sandbox.exchange.coinbase.com")
-	rootCmd.PersistentFlags().Uint16VarP(&flags.WorkerPoolSize, "workers", "w", 5, "The workers pool size for processing the ingested trades")
+	rootCmd.PersistentFlags().Uint16VarP(&flags.WorkerPoolSize, "workers", "w", 5, "The workers pool size for processing the ingested trades. There is a performance affinity between the Go routines and number of products to subscribe.")
+	rootCmd.PersistentFlags().Uint16VarP(&flags.WindowsSize, "windowsize", "s", 200, "The VWAP moving data points windows size. Defaults to 200.")
 	rootCmd.PersistentFlags().BoolVarP(
 		&flags.DevLogLevel, "devlogging", "d", false,
 		`by default logging is set to production level generating structured log entries suitable for machine processing i.e. Kafka. This offers the chance to override this to development level for human friendly log output`,

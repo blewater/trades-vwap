@@ -34,7 +34,7 @@ func New(cfg cmd.Config) Client {
 	return Client{
 		q:            make(types.TradesQ, cfg.WorkerPoolSize),
 		cfg:          cfg,
-		productsVwap: vwap.New(cfg.ProductIDs, cfg.WorkerPoolSize),
+		productsVwap: vwap.New(cfg.ProductIDs, cfg.WindowsSize),
 	}
 }
 

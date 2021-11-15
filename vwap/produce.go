@@ -30,9 +30,6 @@ var vwapCacheMemPool = sync.Pool{
 	},
 }
 
-// Map of product->windowQueue of cached data points
-type vwapMap sync.Map
-
 // ProductsVwap is the container for calculating the queued results.
 type ProductsVwap struct {
 	windowSize uint16

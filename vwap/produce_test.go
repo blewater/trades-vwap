@@ -456,7 +456,7 @@ func (suite *VWAPTestSuite) TestVMAPResults() {
 			expectedErr: "",
 		},
 		{
-			name: "Single Product 10 Tickers with Half Window",
+			name: "Single Product 10 Tickers with Window Size of Two",
 			args: args{
 				quotes: []Ticker{
 					{
