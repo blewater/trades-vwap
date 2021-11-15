@@ -127,6 +127,7 @@ func setupStream(workersCnt uint16) (Client, error) {
 
 	cfg := cmd.Config{
 		WorkerPoolSize: workersCnt,
+		WindowsSize:    200,
 		DevLogLevel:    false,
 		SocketURL:      "wss://ws-feed.exchange.coinbase.com",
 		ProductIDs:     products,
