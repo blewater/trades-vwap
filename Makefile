@@ -20,6 +20,8 @@ run-prod: build
 
 clean:
 	rm ./build/*
+	rm workflow.test
+	rm profile_cpu*
 
 lint:
 	golangci-lint run ./...
@@ -47,7 +49,8 @@ test:
 	go test ./...
 
 bench:
-	go test ./... -run=XXX -bench=.
+	go test ./workflow -run=xxx -bench=. -cpuprofile profile_cpu.out
+	go tool pprof -svg profile_cpu.out > profile_cpu.svg
 
 github-ci:
 	$(MAKE) test

@@ -24,16 +24,17 @@ In the `makefile`, there is a target to benchmark 100 transactions (listening, p
 
 #### In Ubuntu 20.04 
 **A run employing memory pool**
-```
-Benchmark_100_VWAP_Trx_1Thread-16                      1        17392380945 ns/op
-Benchmark_100_VWAP_Trx_2Threads-16                     1        16505108367 ns/op
-Benchmark_100_VWAP_Trx_3Threads-16                     1        21172353538 ns/op
-Benchmark_100_VWAP_Trx_5Threads-16                     1        20584456842 ns/op
-Benchmark_100_VWAP_Trx_10Threads-16                    1        23959326968 ns/op
-Benchmark_100_VWAP_Trx_100Threads-16                   1        20958030900 ns/op
-Benchmark_100_VWAP_Trx_200Threads-16                   1        28076653524 ns/op
-```
+`make bench`
+``` shell
+Benchmark_100_VWAP_Trx_1Thread-16                      1        18692163055 ns/op        3954464 B/op      43279 allocs/op
+Benchmark_100_VWAP_Trx_2Threads-16                     1        20447973426 ns/op         306000 B/op       4890 allocs/op
+Benchmark_100_VWAP_Trx_3Threads-16                     1        14296614771 ns/op         314472 B/op       5058 allocs/op
+Benchmark_100_VWAP_Trx_5Threads-16                     1        23358468964 ns/op         310888 B/op       4971 allocs/op
+Benchmark_100_VWAP_Trx_10Threads-16                    1        17694583925 ns/op         318744 B/op       5129 allocs/op
+Benchmark_100_VWAP_Trx_100Threads-16                   1        13594751784 ns/op         411320 B/op       6004 allocs/op
+Benchmark_100_VWAP_Trx_200Threads-16                   1        14380694155 ns/op         482472 B/op       6487 allocs/op```
 
+```
 **A run without a memory pool**
 ```
 Benchmark_100_VWAP_Trx_1Thread-16                      1        16615332934 ns/op
@@ -44,7 +45,32 @@ Benchmark_100_VWAP_Trx_10Threads-16                    1        27848430412 ns/o
 Benchmark_100_VWAP_Trx_100Threads-16                   1        22826719074 ns/op
 Benchmark_100_VWAP_Trx_200Threads-16                   1        22012305333 ns/op
 ```
-
+Benchmarking also generates profiling information.
+Socket I/O and json marshalling present an opportunity for optimization as is more evident in the profile_cpu.svg diagram below. 
+```sh
+λ go tool pprof workflow.test profile_cpu.out
+File: workflow.test
+Type: cpu
+Time: Nov 15, 2021 at 2:25pm (EET)
+Duration: 173.26s, Total samples = 60ms (0.035%)
+Entering interactive mode (type "help" for commands, "o" for options)
+(pprof) top10
+Showing nodes accounting for 60ms, 100% of 60ms total
+Showing top 10 nodes out of 40
+      flat  flat%   sum%        cum   cum%
+      10ms 16.67% 16.67%       20ms 33.33%  internal/poll.(*FD).Read
+      10ms 16.67% 33.33%       10ms 16.67%  runtime.(*randomEnum).next
+      10ms 16.67% 50.00%       10ms 16.67%  runtime.bgscavenge.func1
+      10ms 16.67% 66.67%       10ms 16.67%  runtime.epollwait
+      10ms 16.67% 83.33%       10ms 16.67%  runtime.madvise
+      10ms 16.67%   100%       10ms 16.67%  syscall.Syscall
+         0     0%   100%       20ms 33.33%  bufio.(*Reader).Peek
+         0     0%   100%       20ms 33.33%  bufio.(*Reader).fill
+         0     0%   100%       20ms 33.33%  bytes.(*Buffer).ReadFrom
+         0     0%   100%       20ms 33.33%  crypto/tls.(*Conn).Read
+```
+#### The generated profile_cpu.svg
+![call graph](./profile_cpu.svg)
 
 #### Logging, instrumentation and observations.
 While this service only includes logging, I selected Uber's zap logger for its environment configuration awareness and efficient logging without employing reflection.

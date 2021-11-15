@@ -31,6 +31,7 @@ func Benchmark_100_VWAP_Trx_1Thread(b *testing.B) {
 	}
 	defer c.conn.Close()
 
+	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
 		tradesToVwapTrxs(&c, 100)
 	}
@@ -43,6 +44,7 @@ func Benchmark_100_VWAP_Trx_2Threads(b *testing.B) {
 	}
 	defer c.conn.Close()
 
+	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
 		tradesToVwapTrxs(&c, 100)
 	}
@@ -55,6 +57,7 @@ func Benchmark_100_VWAP_Trx_3Threads(b *testing.B) {
 	}
 	defer c.conn.Close()
 
+	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
 		tradesToVwapTrxs(&c, 100)
 	}
@@ -67,6 +70,7 @@ func Benchmark_100_VWAP_Trx_5Threads(b *testing.B) {
 	}
 	defer c.conn.Close()
 
+	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
 		tradesToVwapTrxs(&c, 100)
 	}
@@ -79,6 +83,7 @@ func Benchmark_100_VWAP_Trx_10Threads(b *testing.B) {
 	}
 	defer c.conn.Close()
 
+	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
 		tradesToVwapTrxs(&c, 100)
 	}
@@ -91,6 +96,7 @@ func Benchmark_100_VWAP_Trx_100Threads(b *testing.B) {
 	}
 	defer c.conn.Close()
 
+	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
 		tradesToVwapTrxs(&c, 100)
 	}
@@ -103,6 +109,7 @@ func Benchmark_100_VWAP_Trx_200Threads(b *testing.B) {
 	}
 	defer c.conn.Close()
 
+	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
 		tradesToVwapTrxs(&c, 100)
 	}
