@@ -34,7 +34,7 @@ func (c Client) StartPool(ctx context.Context) error {
 					}
 
 					logger.Debug("worker", zap.Uint16("ID", w))
-					logger.Debug("received trade", zap.Any("trade", tradeValue))
+					logger.Debug("received trade", zap.Object(tradeValue.ProductID, tradeValue))
 
 					types.TradeValueMemPool.Put(tradeValue)
 

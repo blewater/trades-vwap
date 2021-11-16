@@ -47,9 +47,9 @@ func bootstrap() (cmd.Config, *zap.Logger) {
 	defer logger.Sync()
 
 	logger.Info("Starting...")
-	logger.Info("Subscribing",zap.Any("Pairs", cfg.ProductIDs))
-	logger.Info("log-mode",zap.Any("development", cfg.DevLogLevel))
-	logger.Info("Socket",zap.Any("URL", cfg.SocketURL))
+	logger.Info("Subscribing",zap.Strings("Pairs", cfg.ProductIDs))
+	logger.Info("log-mode",zap.Bool("development", cfg.DevLogLevel))
+	logger.Info("Socket",zap.String("URL", cfg.SocketURL))
 
 	return cfg, logger
 }

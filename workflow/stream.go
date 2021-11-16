@@ -119,7 +119,7 @@ func ingestTradesStream(ctx context.Context, conn *websocket.Conn, broadcast cha
 
 				broadcast <- tradeValue
 
-				logger.Debug("received trade", zap.Any("ticker", tradeValue))
+				logger.Debug("received trade", zap.Object(tradeValue.ProductID, tradeValue))
 			case server.ErrorMsgType:
 				logger.Error(
 					"socket error",
@@ -128,7 +128,7 @@ func ingestTradesStream(ctx context.Context, conn *websocket.Conn, broadcast cha
 			default:
 				logger.Warn(
 					"unknown socket message",
-					zap.Any(tradeMsg.Type, tradeMsg),
+					zap.Object(tradeMsg.Type, &tradeMsg),
 				)
 			}
 		}

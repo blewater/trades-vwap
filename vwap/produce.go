@@ -124,7 +124,7 @@ func (v *ProductsVwap) ProduceVwap(ctx context.Context, productID string, price,
 		result.Vwap.Quo(newDataPoints.TPV, newDataPoints.TVol)
 	}
 
-	logger.Debug("New result produced", zap.Any(productID, result))
+	logger.Debug("New result produced", zap.Object(productID, result))
 
 	v.resultsQ <- result
 
