@@ -1,26 +1,54 @@
+# Getting started
+```sh
+# connects to ws-feed.exchange.coinbase.com, 
+# 5 go routines, 200 data points window
+# see build/vwap -h for configuration details
+make run-prod
+# or 
+make & build/vwap 
+```
+```sh
+λ build/vwap
+{"level":"info","ts":1637053728.8822916,"logger":"wss://ws-feed.exchange.coinbase.com","caller":"trades-vwap/main.go:49","msg":"Starting..."}
+{"level":"info","ts":1637053728.882322,"logger":"wss://ws-feed.exchange.coinbase.com","caller":"trades-vwap/main.go:50","msg":"Subscribing","Pairs":["BTC-USD","ETH-USD","ETH-BTC"]}
+{"level":"info","ts":1637053728.88233,"logger":"wss://ws-feed.exchange.coinbase.com","caller":"trades-vwap/main.go:51","msg":"log-mode","development":false}
+{"level":"info","ts":1637053728.8823357,"logger":"wss://ws-feed.exchange.coinbase.com","caller":"trades-vwap/main.go:52","msg":"Socket","URL":"wss://ws-feed.exchange.coinbase.com"}
+{"level":"error","ts":1637053729.6383498,"logger":"wss://ws-feed.exchange.coinbase.com","caller":"s hereerver/socket.go:55","msg":"Sending a subscribe msg erred","stacktrace":"github.com/blewater/zh/server.Subscribe\n\t/home/mar/go/src/github.com/blewater/trades-vwap/server/socket.go:55\ngithub.com/blewater/zh/workflow.(*Client).TradesToVwap\n\t/home/mar/go/src/github.com/blewater/trades-vwap/workflow/stream.go:59\nmain.main.func1\n\t/home/mar/go/src/github.com/blewater/trades-vwap/main.go:27"}
+{"level":"info","ts":1637053729.780856,"logger":"wss://ws-feed.exchange.coinbase.com","caller":"workflow/stream.go:104","msg":"Subscribed:"}
+ProductID:ETH-BTC VWAP:0.070830
+ProductID:BTC-USD VWAP:60749.990000
+ProductID:ETH-USD VWAP:4302.990000
+ProductID:ETH-USD VWAP:4302.455930
+ProductID:BTC-USD VWAP:60742.845389
+ProductID:ETH-USD VWAP:4302.451630
+...
+```
 # Trades -> vwap
 #### A VWAP (volume-weighted average price) calculator for streaming Coinbase trades
 
 #### A single consumer with multiple VWAP producers design. 
-A thread listens to the Coinbase socket connection and fans-out trade messages to the workers' routines pool. The thread streams the unmarshalled Json trade message to the messaging Queue for the Goroutines to process. There is Go's memory pool employed too. More of that is in the next section.
-Goroutines receive in async and random fashion an available queued trade ticker to generate a VWAP result. 
-By doing so, it consults the matching memory Product queue of VWAP results, so the newly generated VWAP value reflects being chronologically at the top of the last 200 VWAP data points generated before it.
+A thread listens to the Coinbase socket connection and fans-out trade unmarshalled Json trade messages to the workers' routines pool.  This service employs Go's memory pool too. See the next section.
+Goroutines receive a queued trade quote in async fashion to generate a VWAP result for the `same product`.
+It does so by consulting the cached matching Product queue of VWAP results, so the newly generated *product VWAP* value reflects being chronologically last at the top of the previous 200 (default, the window size is configurable) VWAP data points generated before it.
 
 ![diagram](./vwap.drawio.png)
 
-#### About memory poooling
-Any long-running streaming service unavoidably puts enormous memory pressure on memory-managed languages, i.e., Go. The constant creation and disposal of temporary objects quickly fill up the avaiable memory heap resulting in intermittent activation of the garbage collection language runtime. While Go strives not to impact performance heavily, there is still a penalty, and an ill-designed service may render its runtime container unstable, i.e., `LXC`. To address that constant HEAP pressure, Go offers a **memory pool** for recycling temp objects and is employed in this service for big.Decimal, and other trade structs. While it appeared that float64 offers sufficient precision for the incoming trade values, it seemed more appropriate to employ them. A testing algorithm using float64 data types is also included for documentation purposes
+#### About memory pooling
+Any long-running streaming service unavoidably puts enormous memory pressure on memory-managed languages, i.e., Go. The constant creation and disposal of temporary objects quickly fill up the available memory heap resulting in intermittent activation of the garbage collection language runtime. While Go strives not to impact performance *severely*, there is still a penalty, and an ill-designed service may render its runtime container unstable, i.e., *LXC*. To address that constant HEAP pressure, Go offers a [memory pool](https://pkg.go.dev/sync#Pool) for recycling temp objects and is employed for `big.float` and other trade structs in this service. While it appeared that float64 offers sufficient precision for the incoming trade values, it seemed more appropriate to employ `big.float` types. A testing algorithm using float64 data types is included for documentation purposes.
+
+#### Why big.float?
+A testing `float64` algorithm is included for documentation purposes. Sampling the input trade quotes 8 decimal digits, it appears float64 offers sufficient precision for the incoming trade values. But, it seemed more appropriate to employ `big.float` types for the increased precision in the resulting division operations.
 
 #### Go routines
-While Go offers lightweight threads in the fashion of Erlang, they still occur overhead, e.g., 4k stack each thus, a throttling design should be employed. A known straightforward, efficient pattern is thread pools. Launching to a specific limit at the service's bootstrap time, they scale with sufficient processing bandwidth to a much higher number of incoming requests. 
+While Go offers lightweight threads in the fashion of Erlang, they still occur overhead, e.g., 4k stack each thus, a throttling design should be employed. A known straightforward, efficient pattern is thread pools. Launching to a specific limit at the service launch, they scale with sufficient processing bandwidth to a much higher number of incoming requests. 
 
 If the host allowed multiple connections from the same client IP, it would enable input processing parallelism. Since this is not the case here, it is still feasible to achieve a degree of parallelism later in the pipeline (as the included benchmark test shows) by queueing the ingested trade messages for the thread pool to process.
 
 #### Go's sync.Map
-Based on the language documentation, the `sync.Map` is suitable for disporportionate number of reads vs writing which is the case here.
+The Go's pkg dev [documentation](https://pkg.go.dev/sync#Map) lists the `sync.Map` as suitable for the disproportionate number of reads vs. writes which is the case here.
 
 #### Benchmarking
-In the `makefile`, there is a target to benchmark 100 transactions (listening, processing, and ingesting the VWAP results queue)  in several pool sizes, i.e., 1, 2, 3, 5, 10, 100, 200. The benchmarks can only highlight trends since the transactions are asynchronous and heavily influenced by the day traffic. 
+In the `makefile`, there is a target to benchmark 100 transactions (listening, processing, and ingesting the VWAP results queue)  in several pool sizes, i.e., 1, 2, 3, 5, 10, 100, 200. The benchmarks can only highlight trends since the transactions are asynchronous and influenced by the day traffic. 
 
 #### In Ubuntu 20.04 
 **A run employing memory pool**
@@ -73,4 +101,4 @@ Showing top 10 nodes out of 40
 ![call graph](./profile_cpu.svg)
 
 #### Logging, instrumentation and observations.
-While this service only includes logging, I selected Uber's zap logger for its environment configuration awareness and efficient logging without employing reflection.
+While this service only includes logging, I selected Uber's zap logger for its environment configuration awareness and efficient logging and employing reflection minimally at the user's request.
