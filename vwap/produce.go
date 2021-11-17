@@ -64,6 +64,9 @@ func (v *ProductsVwap) ProduceVwap(ctx context.Context, productID string, price,
 
 	newDataPoints.PV.Mul(price, volume)
 	newDataPoints.Vol.Set(volume)
+
+	recyclePriceVol(price, volume)
+
 	newDataPoints.TPV.Set(newDataPoints.PV)
 	newDataPoints.TVol.Set(newDataPoints.Vol)
 
@@ -129,6 +132,11 @@ func (v *ProductsVwap) ProduceVwap(ctx context.Context, productID string, price,
 	v.resultsQ <- result
 
 	return nil
+}
+
+func recyclePriceVol(price, volume *big.Float) {
+	types.BigFloatMemPool.Put(price)
+	types.BigFloatMemPool.Put(volume)
 }
 
 func memPoolGet() *vwapCache {
