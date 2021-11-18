@@ -5,7 +5,7 @@
 # see build/vwap -h for configuration details
 make run-prod
 # or 
-make & build/vwap 
+make && build/vwap 
 ```
 ```sh
 λ build/vwap
@@ -23,11 +23,14 @@ ProductID:BTC-USD VWAP:60742.845389
 ProductID:ETH-USD VWAP:4302.451630
 ...
 ```
+### Optimization Update
+As identified by benchmarking the top bottleneck, three efficient field parsers utilizing `bytes.indexOf()` (*without malloc and internally implemented with assembly instructions by the std library*) replaced the JSON unmarshalling gorilla call thus lowering memory and I/O system demands. The efficiency gain is reflected in the updated benchmarking profiling below.
+
 # Trades -> vwap
 #### A VWAP (volume-weighted average price) calculator for streaming Coinbase trades
 
 #### A single consumer with multiple VWAP producers design. 
-A thread listens to the Coinbase socket connection and fans-out trade unmarshalled Json trade messages to the workers' routines pool.  This service employs Go's memory pool too. See the next section.
+A thread listens to the Coinbase socket connection and fans-out trade ~~unmarshalled Json~~ byte parsed trade messages to the workers' routines pool.  This service employs Go's memory pool too. See the next section.
 Goroutines receive a queued trade quote in async fashion to generate a VWAP result for the `same product`.
 It does so by consulting the cached matching Product queue of VWAP results, so the newly generated *product VWAP* value reflects being chronologically last at the top of the previous 200 (default, the window size is configurable) VWAP data points generated before it.
 
@@ -51,8 +54,18 @@ The Go's pkg dev [documentation](https://pkg.go.dev/sync#Map) lists the `sync.Ma
 In the `makefile`, there is a target to benchmark 100 transactions (listening, processing, and ingesting the VWAP results queue)  in several pool sizes, i.e., 1, 2, 3, 5, 10, 100, 200. The benchmarks can only highlight trends since the transactions are asynchronous and influenced by the day traffic. 
 
 #### In Ubuntu 20.04 
-**A run employing memory pool**
 `make bench`
+**A run after replacing JSON unmarshalling with byte parsing functions**
+```shell
+Benchmark_100_VWAP_Trx_1Thread-16                      1        10191818424 ns/op        3951112 B/op      42407 allocs/op
+Benchmark_100_VWAP_Trx_2Threads-16                     1        16115273285 ns/op         272104 B/op       3902 allocs/op
+Benchmark_100_VWAP_Trx_3Threads-16                     1        13917217261 ns/op         270800 B/op       3915 allocs/op
+Benchmark_100_VWAP_Trx_5Threads-16                     1        11186958717 ns/op         270168 B/op       3844 allocs/op
+Benchmark_100_VWAP_Trx_10Threads-16                    1        17169675659 ns/op         276272 B/op       3948 allocs/op
+Benchmark_100_VWAP_Trx_100Threads-16                   1        13048275212 ns/op         345688 B/op       4273 allocs/op
+Benchmark_100_VWAP_Trx_200Threads-16                   1        14986465890 ns/op         410744 B/op       4724 allocs/op
+```
+**A run employing memory pool**
 ``` shell
 Benchmark_100_VWAP_Trx_1Thread-16                      1        18692163055 ns/op        3954464 B/op      43279 allocs/op
 Benchmark_100_VWAP_Trx_2Threads-16                     1        20447973426 ns/op         306000 B/op       4890 allocs/op
@@ -74,9 +87,35 @@ Benchmark_100_VWAP_Trx_100Threads-16                   1        22826719074 ns/o
 Benchmark_100_VWAP_Trx_200Threads-16                   1        22012305333 ns/op
 ```
 Benchmarking also generates profiling information.
-Socket I/O and json marshalling present an opportunity for optimization as is more evident in the profile_cpu.svg diagram below. 
+
+#### After the replacing of JSON marshalers with bytes parsers  
+
 ```sh
 λ go tool pprof workflow.test profile_cpu.out
+```
+#### After the removal of JSON marshalling
+```sh
+File: workflow.test
+Type: cpu
+Duration: 96.62s, Total samples = 130ms ( 0.13%)
+Entering interactive mode (type "help" for commands, "o" for options)
+(pprof) top10
+Showing nodes accounting for 130ms, 100% of 130ms total
+Showing top 10 nodes out of 116
+      flat  flat%   sum%        cum   cum%
+      40ms 30.77% 30.77%       40ms 30.77%  runtime.futex
+      10ms  7.69% 38.46%       10ms  7.69%  bytes.IndexAny
+      10ms  7.69% 46.15%       10ms  7.69%  p256MulInternal
+      10ms  7.69% 53.85%       10ms  7.69%  runtime.(*itabTableType).find
+      10ms  7.69% 61.54%       10ms  7.69%  runtime.(*lfstack).empty (inline)
+      10ms  7.69% 69.23%       10ms  7.69%  runtime.bgscavenge
+      10ms  7.69% 76.92%       20ms 15.38%  runtime.mallocgc
+      10ms  7.69% 84.62%       10ms  7.69%  runtime.pcvalue
+      10ms  7.69% 92.31%       10ms  7.69%  runtime.scanblock
+      10ms  7.69%   100%       30ms 23.08%  runtime.schedule
+```
+#### Before with JSON marshalling
+```sh
 File: workflow.test
 Type: cpu
 Time: Nov 15, 2021 at 2:25pm (EET)
@@ -101,4 +140,4 @@ Showing top 10 nodes out of 40
 ![call graph](./profile_cpu.svg)
 
 #### Logging, instrumentation and observations.
-While this service only includes logging, I selected Uber's zap logger for its environment configuration awareness and efficient logging and employing reflection minimally at the user's request.
+While this service only includes logging, I selected Uber's zap logger for its environment configuration awareness and efficient logging without employing reflection.
